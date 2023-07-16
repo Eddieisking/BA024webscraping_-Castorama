@@ -7,6 +7,8 @@ from scrapy import signals, Request
 import random
 from webscrapy.settings import USER_AGENT_LIST
 from scrapy.exceptions import IgnoreRequest, NotConfigured
+import datetime
+
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
@@ -136,9 +138,10 @@ class RotateProxyMiddleware:
 
     def process_request(self, request, spider):
         request.meta['proxy'] = self.current_proxy
-        print('current_proxy')
-        print(self.current_proxy)
-
+        # print('current_proxy')
+        # print(self.current_proxy)
+        current_time = datetime.datetime.now()
+        print(current_time)
     def process_response(self, request, response, spider):
         if response.status == 403:
             retries = request.meta.get('retry_times', 0)

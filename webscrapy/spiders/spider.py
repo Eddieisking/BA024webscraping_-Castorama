@@ -96,7 +96,7 @@ class SpiderSpider(scrapy.Spider):
                     item = WebscrapyItem()
                     item['review_id'] = datas.get('Results')[i].get('Id')
                     item['product_name'] = product_name
-                    item['customer_name'] = datas.get('Results')[i].get('UserNickname')
+                    item['customer_name'] = datas.get('Results')[i].get('UserNickname') if datas.get('Results')[i].get('UserNickname') else 'Anonymous'
                     item['customer_rating'] = datas.get('Results')[i].get('Rating')
                     item['customer_date'] = datas.get('Results')[i].get('SubmissionTime')
                     item['customer_review'] = datas.get('Results')[i].get('ReviewText')
