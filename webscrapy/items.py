@@ -16,4 +16,5 @@ class WebscrapyItem(scrapy.Item):
     customer_date = scrapy.Field()
     customer_review = scrapy.Field()
     customer_support = scrapy.Field()
+    customer_disagree = scrapy.Field()
     pass

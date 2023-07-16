@@ -6,7 +6,7 @@
 from scrapy import signals, Request
 import random
 from webscrapy.settings import USER_AGENT_LIST
-
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
@@ -122,3 +122,57 @@ class WebscrapyDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+
+
+"""In the following code, just need to change self.current_proxy to use new proxy"""
+class RotateProxyMiddleware:
+    def __init__(self):
+        self.current_proxy = "http://storm-stst123_area-FR:123123@proxy.stormip.cn:1000"
+        self.max_retries = 3
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls()
+
+    def process_request(self, request, spider):
+        request.meta['proxy'] = self.current_proxy
+        print('current_proxy')
+        print(self.current_proxy)
+
+    def process_response(self, request, response, spider):
+        if response.status == 403:
+            retries = request.meta.get('retry_times', 0)
+            if retries < 3:
+                new_request = request.copy()
+                new_request.dont_filter = True  # Disable duplicate request filtering
+                new_request.meta['retry_times'] = retries + 1
+                return new_request
+            else:
+                self.save_unable_to_access(request.url)
+        return response
+
+    def process_exception(self, request, exception, spider):
+        if isinstance(exception, IgnoreRequest):
+            # Handle IgnoreRequest exceptions
+            if getattr(exception, 'response', None) is not None:
+                return self.process_response(request, exception.response, spider)
+            else:
+                # IgnoreRequest without a response, re-raise the exception
+                raise exception
+        elif isinstance(exception, NotConfigured):
+            # NotConfigured exception, re-raise it
+            raise exception
+        else:
+            # Handle other exceptions
+            retries = request.meta.get('retry_times', 0)
+            if retries < self.max_retries:
+                new_request = request.copy()
+                new_request.dont_filter = True  # Disable duplicate request filtering
+                new_request.meta['retry_times'] = retries + 1
+                return new_request
+            else:
+                self.save_unable_to_access(request.url)
+
+    def save_unable_to_access(self, url):
+        with open("unable to access.txt", "a") as file:
+            file.write(f"Unable to access: {url}\n")

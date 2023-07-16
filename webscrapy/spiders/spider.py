@@ -18,12 +18,12 @@ class SpiderSpider(scrapy.Spider):
     headers = {}  #
 
     def start_requests(self):
-        keywords = ['DeWalt', 'Black+and+Decker', 'Stanley', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Irwin+Tools',
-                    'Lenox']
+        # keywords = ['Stanley', 'Black+Decker', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Facom', 'MAC Tools', 'Vidmar', 'Lista', 'Irwin Tools', 'Lenox', 'Proto', 'CribMaster', 'Powers Fasteners', 'cub-cadet', 'hustler', 'troy-bilt', 'rover', 'BigDog Mower', 'MTD']
+        exist_keywords = ['dewalt', 'Stanley', 'Black+Decker', 'Facom']
         # company = 'Stanley Black and Decker'
 
         # from search words to generate product_urls
-        for keyword in keywords:
+        for keyword in exist_keywords:
             push_key = {'keyword': keyword}
             search_url = f'https://www.castorama.fr/search?term={keyword}'
 
@@ -63,6 +63,7 @@ class SpiderSpider(scrapy.Spider):
 
         product_id = response.xpath('.//*[@id="product-details"]//td[@data-test-id="product-ean-spec"]/text()')[
             0].extract()
+        product_name = response.xpath('//*[@id="product-title"]/text()')[0].extract()
 
         # Product reviews url
         product_detailed_href = f'https://api.bazaarvoice.com/data/reviews.json?resource=reviews&action' \
@@ -77,10 +78,11 @@ class SpiderSpider(scrapy.Spider):
                                 f'=cad9K7m2kxo5wBH0ObPjr6uk0EFHk2o06sOp4UMIhBNBM&apiversion' \
                                 f'=5.5&displaycode=5678-fr_fr '
 
-        if product_detailed_href:
-            yield Request(url=product_detailed_href, callback=self.review_parse)
+        if product_name:
+            yield Request(url=product_detailed_href, callback=self.review_parse, meta={'product_name': product_name})
 
     def review_parse(self, response: Request, **kwargs):
+        product_name = response.meta['product_name']
 
         datas = json.loads(response.body)
 
@@ -93,12 +95,13 @@ class SpiderSpider(scrapy.Spider):
                 try:
                     item = WebscrapyItem()
                     item['review_id'] = datas.get('Results')[i].get('Id')
-                    item['product_name'] = datas.get('Results')[i].get('ProductId')
+                    item['product_name'] = product_name
                     item['customer_name'] = datas.get('Results')[i].get('UserNickname')
                     item['customer_rating'] = datas.get('Results')[i].get('Rating')
                     item['customer_date'] = datas.get('Results')[i].get('SubmissionTime')
                     item['customer_review'] = datas.get('Results')[i].get('ReviewText')
                     item['customer_support'] = datas.get('Results')[i].get('TotalPositiveFeedbackCount')
+                    item['customer_disagree'] = datas.get('Results')[i].get('TotalNegativeFeedbackCount')
 
                     yield item
                 except Exception as e:
@@ -106,7 +109,7 @@ class SpiderSpider(scrapy.Spider):
 
             if offset_number < total_number:
                 next_page = re.sub(r'offset=\d+', f'offset={offset_number}', response.url)
-                yield Request(url=next_page, callback=self.review_parse)
+                yield Request(url=next_page, callback=self.review_parse, meta={'product_name': product_name})
             else:
                 pass
 
