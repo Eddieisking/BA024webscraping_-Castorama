@@ -142,6 +142,7 @@ class RotateProxyMiddleware:
         # print(self.current_proxy)
         current_time = datetime.datetime.now()
         print(current_time)
+
     def process_response(self, request, response, spider):
         if response.status == 403:
             retries = request.meta.get('retry_times', 0)
