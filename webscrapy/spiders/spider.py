@@ -15,13 +15,13 @@ from webscrapy.items import WebscrapyItem
 class SpiderSpider(scrapy.Spider):
     name = "spider"
     allowed_domains = ["www.castorama.fr", "api.bazaarvoice.com"]
-    headers = {}  #
+    headers = {}  
 
     def start_requests(self):
         # keywords = ['Stanley', 'Black+Decker', 'Craftsman', 'Porter-Cable', 'Bostitch', 'Facom', 'MAC Tools', 'Vidmar', 'Lista', 'Irwin Tools', 'Lenox', 'Proto', 'CribMaster', 'Powers Fasteners', 'cub-cadet', 'hustler', 'troy-bilt', 'rover', 'BigDog Mower', 'MTD']
-        exist_keywords = ['dewalt', 'Stanley', 'Black+Decker', 'Facom'] # ***********************************************
+        exist_keywords = ['dewalt', 'Stanley', 'Black+Decker', 'Facom']
+        
         # company = 'Stanley Black and Decker'
-
         # from search words to generate product_urls
         for keyword in exist_keywords:
             push_key = {'keyword': keyword}
@@ -41,15 +41,17 @@ class SpiderSpider(scrapy.Spider):
         # Based on pages to build product_urls
         keyword = kwargs['keyword']
         product_urls = [f'https://www.castorama.fr/search?page={page}&term={keyword}' for page
-                        in range(1, pages+1)]  # pages+1 ***************************************************************
+                        in range(1, pages+1)]  # pages+1
 
         for product_url in product_urls:
             yield Request(url=product_url, callback=self.product_parse, meta={'product_brand':keyword})
 
     def product_parse(self, response: Request, **kwargs):
         product_brand = response.meta['product_brand']
+        
         # extract the product url link from each page of product list
         product_urls = re.findall(r'"shareableUrl":"(.*?)"', response.body.decode('utf-8'))
+        
         for product_url in product_urls:
             product_detailed_url = product_url.encode().decode('unicode-escape')
 
@@ -97,9 +99,7 @@ class SpiderSpider(scrapy.Spider):
         product_type = response.meta['product_type']
         product_brand = response.meta['product_brand']
         product_model = response.meta['product_model']
-
         datas = json.loads(response.body)
-
         if datas:
             limit_number = datas.get('Limit')
             offset_number = datas.get('Offset') + limit_number
